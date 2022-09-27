@@ -25,20 +25,21 @@ def get_ais_distances(ais_path, coast_data_path):
     #plt.title('r_cpa vs dist_to_shore')
     #plt.xlabel('r cpa')
     #plt.ylabel('mean length ')
-    
+    #final = pd.DataFrame()
+    #dist_dict = {}
+    # every key is an area 
+    # every value is a distance 
     for index, row in df.iterrows():
-        if row['dataset'] == 'encs_west':
-            own_mmsi = row['own_mmsi']
-            obst_mmsi = row['obst_mmsi']
-            
-            lon_man = row['lon_maneuver']
-            lat_man = row['lat_maneuver']
-            colreg_type = row['COLREG']
-            #print('own_mmsi: ', own_mmsi, 'obst_mmsi: ', obst_mmsi, ' lon_man: ', lon_man, ' lat_man: ', lat_man, ' colreg_type: ', colreg_type )
-            dist_to_coast = distance_from_coast(lon_man,lat_man,coast_data_path,degree_in_km=111.1)
-            #print(dist_to_coast)
-            dists = []
-            dists.append(dist_to_coast) # could try to use dict instead! connecting r_cpa to distance 
+        own_mmsi = row['own_mmsi']
+        obst_mmsi = row['obst_mmsi']
+        
+        lon_man = row['lon_maneuver']
+        lat_man = row['lat_maneuver']
+        colreg_type = row['COLREG']
+        #print('own_mmsi: ', own_mmsi, 'obst_mmsi: ', obst_mmsi, ' lon_man: ', lon_man, ' lat_man: ', lat_man, ' colreg_type: ', colreg_type )
+        dist_to_coast = distance_from_coast(lon_man,lat_man,coast_data_path,degree_in_km=111.1)
+
+        if row['dataset'] == 'encs_west': # only for west
             colreg_dict = {
                 -2.0: [], 
                 3.0: [], 
@@ -47,13 +48,19 @@ def get_ais_distances(ais_path, coast_data_path):
             colreg_dict[colreg_type].insert(0, dist_to_coast)
 
             r_cpa = row['r_cpa']
+            df.loc[index, ['dist_to_coast']]= [dist_to_coast]
 
-    df['dist_to_coast'] = dists     # as per now it overwrites, and only uses the last element in the csv // NOW it says that ValueError: Length of values (1) does not match length of index (34912)
+    input(df)
+
+        #df['dist_to_coast'] = dist_to_coast     # as per now it overwrites, and only uses the last element in the csv // NOW it says that ValueError: Length of values (1) does not match length of index (34912)
+        #final = final.append(df)
+        #final = pd.concat([final, df])
         #if row['dataset'] == 'encs_west':
             #plt.scatter(r_cpa, dist_to_coast, alpha=0.5, c ='#FF5733')
         #print(dist_to_coast)
    
     #df.to_csv("new_csv.csv", index = False)
+    df.to_csv('COLREG_w_land')
 
 # Get distance for all ais data in file
 def distance_from_coast(lon,lat,coast_data_path,degree_in_km=111.12):
