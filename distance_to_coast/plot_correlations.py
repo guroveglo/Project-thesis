@@ -1,10 +1,12 @@
 
 import scipy.stats as stat
 import pandas as pd
+import csv
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 from math import sqrt, cos, sin
-from filter_data import HO_south, CRGW_south, OTGW_south
+from filter_data import HO_south, CRGW_south, OTGW_south, HO_west, CRGW_west, OTGW_west
 
 # not clustered yet
 
@@ -46,36 +48,136 @@ def obstacleManeuver(data, parameters):
     fig = plt.figure()
     plt.hist(no_man_obst['length_ratio'])
     plt.show()
-    
-def lengthsAndDistances(data):
+
+def distance_from_coast(lon,lat,coast_data_path,degree_in_km=111.12):
+    D = np.load(coast_data_path, allow_pickle = True).tolist()
+    lons,lats = D['lons'],D['lats']
+    dists = np.sqrt((lons-lon)**2+(lats-lat)**2)
+    min_dist = np.min(dists)*degree_in_km
+    return min_dist
+
+
+def lengthsAndDistances(data, coast_data_path):
     own_lengths = data['own_length'] # every row in this column 
     obst_lengths = data['obst_length'] 
     r_cpa = data['r_cpa']
     r_maneuver = data['r_maneuver_own']
     length_ratio = obst_lengths/own_lengths
     mean_length = (obst_lengths+own_lengths)/2
-    print('Correlation r_cpa and mean length ' + str(stat.spearmanr(r_cpa, mean_length)))
-    print('Correlation r_maneuver and mean length ' + str(stat.spearmanr(r_maneuver, mean_length)))
+    #print('Correlation r_cpa and mean length ' + str(stat.spearmanr(r_cpa, mean_length)))
+    #print('Correlation r_maneuver and mean length ' + str(stat.spearmanr(r_maneuver, mean_length)))
     #print('Correlation r_cpa and length_ratio ' + str(stat.spearmanr(r_cpa, length_ratio)))
     #print('Correlation r_maneuver and length_ratio ' + str(stat.spearmanr(r_maneuver, length_ratio)))
     #print('Correlation r_cpa and own length ' + str(stat.spearmanr(r_cpa, own_lengths)))
     #print('Correlation r_cpa and obst length ' + str(stat.spearmanr(r_cpa, obst_lengths)))
     speed_own = data['own_speed']
     speed_obst = data['obst_speed']
-    contact_angle = ['alpha_cpa']  #in degrees
+    
     #relative_speed_own = np.sqrt((speed_obst*np.cos(contact_angle)- speed_own)**2 + (speed_obst*np.sin(contact_angle))**2 )  #MAKE THIS WORK (maybe by using a loop instead of numpy)
+    #dists_to_shore = data['dist_to_coast']
+    #obs vi har mange arrays vi opererer på 
+    rel_speeds = []
+    dists = []
+    cpas = []
+    mans = []
+    for index, row in data.iterrows():
+        v_own = row['own_speed']
+        v_obst = row['obst_speed']
+        rel_b_cpa = row['beta_cpa']
+        relative_speed_cpa = sqrt(v_own**2 + v_obst**2 - 2*v_own*v_obst*cos(rel_b_cpa))
+        rel_speeds.append(relative_speed_cpa)
+        
+        lon_man = row['lon_maneuver']
+        lat_man = row['lat_maneuver']
+        
+        #print('own_mmsi: ', own_mmsi, 'obst_mmsi: ', obst_mmsi, ' lon_man: ', lon_man, ' lat_man: ', lat_man, ' colreg_type: ', colreg_type )
+        dist_to_coast = distance_from_coast(lon_man,lat_man,coast_data_path,degree_in_km=111.1)
+        if(dist_to_coast < 30):# we want to remove the outliers 
+            dists.append(dist_to_coast)
+            cpas.append(row['r_cpa'])
+            mans.append(row['r_maneuver_own'])
+
+    #Plotting
+    print('Correlation r_cpa and dists ' + str(stat.spearmanr(r_cpa, rel_speeds)))
 
     fig = plt.figure()
-    plt.title('r_cpa vs mean length')
+    plt.title('r_cpa vs distance to coast')
     plt.xlabel('r cpa')
-    plt.ylabel('mean length ')
-    plt.scatter(r_cpa, mean_length, alpha=0.5, c ='#EA3245')
+    plt.ylabel('r_maneuver vs distance to coast')
+    #plt.scatter(r_cpa, dists, alpha=0.5, c ='#EA3245')
+    plt.scatter(cpas, dists, alpha=0.5, c ='#EA3245')
 
     fig = plt.figure()
-    plt.scatter(r_maneuver, mean_length, alpha=0.5, c='#24C459')
-    plt.title('r_maneuver vs mean length')
+    #plt.scatter(r_maneuver, dists, alpha=0.5, c='#24C459')
+    plt.scatter(mans, dists, alpha=0.5, c='#24C459')
+
+    plt.title('distance to coast')
     plt.xlabel('r maneuver')
-    plt.ylabel('mean length')
+    plt.ylabel('distance to coast')
+
+    plt.show()
+
+def try_(namefile):
+    #types = {'own_name' : 'str','obst_name' : 'str','date_cpa' : 'str','start_idx': np.int32,'stop_idx': np.int32,'case' : 'str','img_name' : 'str','img_class' : 'str', 'COLREG': np.float64,'own_length': np.float64,'obst_length': np.float32, 'own_type': np.float32,'obst_type': np.float32,'own_nav_status': np.float32,'obst_nav_status': np.float32,'own_speed': np.float32,'obst_speed': np.float32,'maneuver_index_own': np.float32,'r_maneuver_own': np.float32,'pre_man_dist_own': np.float32,'post_man_dist_own': np.float32,'delta_speed_own': np.float32,'delta_course_own': np.float32,'alpha_start': np.float32,'beta_start': np.float32,'r_cpa': np.float32,'alpha_cpa': np.float32,'beta_cpa': np.float32, 'dist_to_coast': np.float32}
+    #n = {'n_ships','own_mmsi','obst_mmsi','own_name','obst_name','own_callsign','obst_callsign','own_length','obst_length','own_width','obst_width','own_type','obst_type','own_nav_status','obst_nav_status','own_speed','obst_speed','multi_man_own','maneuver_made_own','maneuver_index_own','maneuver_stop_idx_own','r_maneuver_own','pre_man_dist_own','pre_man_t_cpa_own','post_man_dist_own','post_man_t_cpa_own','delta_speed_own','delta_course_own','multi_man_obst','maneuver_made_obst','maneuver_index_obst','maneuver_stop_idx_obst','r_maneuver_obst','pre_man_dist_obst','pre_man_t_cpa_obst','post_man_dist_obst','post_man_t_cpa_obst','delta_speed_obst','delta_course_obst','alpha_start','beta_start','r_cpa','alpha_cpa','beta_cpa','lon_maneuver','lat_maneuver','COLREG','single_COLREG_type','time','date_cpa','cpa_idx','start_idx','stop_idx','case','dataset','COLREGS_not_filt','COLREGS_filt','img_name','img_class','dist_to_coast'}
+    #data = pd.read_csv(namefile,  sep=";", decimal=".", header=None, names = n)
+    #input(data)
+    #HO = 3
+    # HO_df = data.loc[(data['COLREG'] == HO)]
+
+    with open(namefile, 'r') as file:
+        read = file.read()
+    #txt file to a list of list. Inner list means each hunk lines. Outer list means different hunks:
+    records = [list(map(str.strip, line.strip().split('\n'))) for line in read.split('\n\n')]
+    data = []
+    
+    
+            
+    
+
+def dist_to_coast(namefile):
+
+    with open(namefile, 'r') as infile:
+        reader = csv.DictReader(infile)
+        data = {}
+        for row in reader:
+            #print('row: {}'.format(row))
+            for header, value in row.items():
+                try:
+                    data[header].append(value)
+                except KeyError:
+                    data[header] = [value]
+    df = data
+    HO = 3  # Head on situation
+    #we have all data in data, a dict
+    r_cpas = []
+    r_mans = []
+    dists = []
+    #for (key, value) in data.items():
+       # if (key == 'COLREG' and value)
+   #if data['COLREG'] == HO and data['dataset'] == 'encs_west':
+
+    #HO_df = data.loc[(data['COLREG'] == HO)]
+    #HO_west = HO_df.loc[HO_df['dataset'] == 'encs_west']
+
+    r_cpas = data['r_cpa']
+    r_mans = HO_west['r_maneuver_own']
+    dists = HO_west['dist_to_coast']
+
+    #Plotting
+    print('Correlation r_cpa and dist_to_coast ' + str(stat.spearmanr(r_cpas, dists)))
+
+    fig = plt.figure()
+    plt.title('r_cpa vs relative dist_to_coast ')
+    plt.xlabel('r cpa')
+    plt.ylabel('relative speed ')
+    plt.scatter(r_cpas, dists , alpha=0.5, c ='#EA3245')
+
+    fig = plt.figure()
+    plt.scatter(r_mans, dists , alpha=0.5, c='#24C459')
+    plt.title('r_maneuver vs dist_to_coast ')
+    plt.xlabel('r maneuver')
+    plt.ylabel('relative speed')
 
     plt.show()
 
@@ -104,6 +206,7 @@ def find_dist_to_coast_corr(df):
         colreg_dict[colreg_type].insert(0, dist_to_coast)
 
         r_cpa = row['r_cpa']
+
 
     
 
@@ -186,14 +289,15 @@ if __name__ == '__main__':
     #lengthsAndDistances(data)
     #plt.show()
 
-    types = {'own_name' : 'str','obst_name' : 'str','date_cpa' : 'str','start_idx': np.int32,'stop_idx': np.int32,'case' : 'str','img_name' : 'str','img_class' : 'str', 'COLREG': np.float64,'own_length': np.float64,'obst_length': np.float32, 'own_type': np.float32,'obst_type': np.float32,'own_nav_status': np.float32,'obst_nav_status': np.float32,'own_speed': np.float32,'obst_speed': np.float32,'maneuver_index_own': np.float32,'r_maneuver_own': np.float32,'pre_man_dist_own': np.float32,'post_man_dist_own': np.float32,'delta_speed_own': np.float32,'delta_course_own': np.float32,'alpha_start': np.float32,'beta_start': np.float32,'r_cpa': np.float32,'alpha_cpa': np.float32,'beta_cpa': np.float32, 'dist_to_coast': np.float32}
+    #types = {'own_name' : 'str','obst_name' : 'str','date_cpa' : 'str','start_idx': np.int32,'stop_idx': np.int32,'case' : 'str','img_name' : 'str','img_class' : 'str', 'COLREG': np.float64,'own_length': np.float64,'obst_length': np.float32, 'own_type': np.float32,'obst_type': np.float32,'own_nav_status': np.float32,'obst_nav_status': np.float32,'own_speed': np.float32,'obst_speed': np.float32,'maneuver_index_own': np.float32,'r_maneuver_own': np.float32,'pre_man_dist_own': np.float32,'post_man_dist_own': np.float32,'delta_speed_own': np.float32,'delta_course_own': np.float32,'alpha_start': np.float32,'beta_start': np.float32,'r_cpa': np.float32,'alpha_cpa': np.float32,'beta_cpa': np.float32, 'dist_to_coast': np.float32}
+    #types = {'own_name' : 'str','obst_name' : 'str','date_cpa' : 'str','start_idx': np.int32,'stop_idx': np.int32,'case' : 'str','img_name' : 'str','img_class' : 'str', 'COLREG': np.float64,'own_length': np.float64,'obst_length': np.float32, 'own_type': np.float32,'obst_type': np.float32,'own_nav_status': np.float32,'obst_nav_status': np.float32,'own_speed': np.float32,'obst_speed': np.float32,'maneuver_index_own': np.float32,'r_maneuver_own': np.float32,'pre_man_dist_own': np.float32,'post_man_dist_own': np.float32,'delta_speed_own': np.float32,'delta_course_own': np.float32,'alpha_start': np.float32,'beta_start': np.float32,'r_cpa': np.float32,'alpha_cpa': np.float32,'beta_cpa': np.float32, 'dist_to_coast': np.float32}
 
-    df = pd.read_csv('COLREG_classified_dist_to_shore.csv',  sep=";", decimal=".") 
-    
-
-    #data = OTGW_south
-    #lengthsAndDistances(data)
-
+    #df = pd.read_csv('COLREG_w_land.csv',  sep=";", decimal=".",  dtype=types) 
+    #dist_to_coast('COLREG_w_land.csv')
+    #try_('COLREG_w_land.csv')
+    path = 'Data/'
+    data = OTGW_south 
+    lengthsAndDistances(data, os.path.join(path,'coastal_basemap_data.npy'))
     #obstacleManeuver(data, 'own_length')
     #param = 'delta_course_own'
     #poseStartVsParam(HO_df, param)
