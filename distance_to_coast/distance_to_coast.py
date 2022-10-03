@@ -101,37 +101,37 @@ def get_ais_distances(ais_path, coast_data_path):
         dist_to_coast = distance_from_coast(lon_man,lat_man,coast_data_path,degree_in_km=111.1)
         #cpas = row['r_cpa']
         #mans = row['r_maneuver']
-        if row['dataset'] == 'encs_west': # only for west OBS! 
+        #if row['dataset'] == 'encs_west': # only for west OBS! 
             #colreg_dict = {
             #    -2.0: [], 
             #    3.0: [], 
             #    -1.0: []
            # }
             #colreg_dict[colreg_type].insert(0, dist_to_coast)
-            west_cpas = df.loc[index, ['r_cpa']]
-            west_man = df.loc[index, ['r_maneuver_own']]
-            west_dists = df.loc[index, ['dist_to_coast']]= [dist_to_coast]  #now we only have west, 
+            #west_cpas = df.loc[index, ['r_cpa']]
+           # west_man = df.loc[index, ['r_maneuver_own']]
+        dists = df.loc[index, ['dist_to_coast']]= [dist_to_coast]  #now we only have west, 
 
     #df_HO = colreg_dict[-1.0]
-    HO_west_cpa = west_cpas.loc[(df['COLREG'] == HO)]
-    HO_west_man = west_man.loc[(df['COLREG'] == HO)]
-    HO_west_dists = west_dists.loc[(df['COLREG'] == HO)]
+    #HO_west_cpa = west_cpas.loc[(df['COLREG'] == HO)]
+    #HO_west_man = west_man.loc[(df['COLREG'] == HO)]
+    #HO_west_dists = west_dists.loc[(df['COLREG'] == HO)]
 
     #Plotting
-    print('Correlation r_cpa and dist_to_coast ' + str(stat.spearmanr(HO_west_cpa, HO_west_dists)))
+    #print('Correlation r_cpa and dist_to_coast ' + str(stat.spearmanr(HO_west_cpa, HO_west_dists)))
 
-    fig = plt.figure()
-    plt.title('r_cpa vs relative dist_to_coast ')
-    plt.xlabel('r cpa')
-    plt.ylabel('relative speed ')
-    plt.scatter(HO_west_cpa, HO_west_dists , alpha=0.5, c ='#EA3245')
+    #fig = plt.figure()
+    #plt.title('r_cpa vs relative dist_to_coast ')
+   # plt.xlabel('r cpa')
+    #plt.ylabel('relative speed ')
+    #plt.scatter(HO_west_cpa, HO_west_dists , alpha=0.5, c ='#EA3245')
 
-    fig = plt.figure()
-    plt.scatter(HO_west_man, HO_west_dists , alpha=0.5, c='#24C459')
-    plt.title('r_maneuver vs dist_to_coast ')
-    plt.xlabel('r maneuver')
-    plt.ylabel('relative speed')
-    #input(df)
+    #fig = plt.figure()
+    #plt.scatter(HO_west_man, HO_west_dists , alpha=0.5, c='#24C459')
+    #plt.title('r_maneuver vs dist_to_coast ')
+    #plt.xlabel('r maneuver')
+   # plt.ylabel('relative speed')
+    input(df)
 
         #df['dist_to_coast'] = dist_to_coast     # as per now it overwrites, and only uses the last element in the csv // NOW it says that ValueError: Length of values (1) does not match length of index (34912)
         #final = final.append(df)
@@ -141,7 +141,7 @@ def get_ais_distances(ais_path, coast_data_path):
         #print(dist_to_coast)
    
     #df.to_csv("new_csv.csv", index = False)
-    #df.to_csv('COLREG_w_land')
+    df.to_csv('COLREG_w_land_all')
 
 # Get distance for all ais data in file
 def distance_from_coast(lon,lat,coast_data_path,degree_in_km=111.12):
@@ -187,10 +187,11 @@ if __name__ == '__main__':
 
     #Run only one time to save the data. Will cost less time
     #save_coastal_data(path,resolution='h')  
-    #print("Adding dists to csv: ")
-    #get_ais_distances(os.path.join(path,'classified.csv'), os.path.join(path,'coastal_basemap_data.npy'))
-    data = HO_south
-    newtry(data, os.path.join(path,'coastal_basemap_data.npy'))
+    print("Adding dists to csv: ")
+    get_ais_distances(os.path.join(path,'classified.csv'), os.path.join(path,'coastal_basemap_data.npy'))
+    #data = HO_south
+    #newtry(data, os.path.join(path,'coastal_basemap_data.npy'))
+
     #plot_all_ais_cases(os.path.join(path,'classified.csv'), os.path.join(path,'coastal_basemap_data.npy'))
 
 
