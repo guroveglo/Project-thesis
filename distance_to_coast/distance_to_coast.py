@@ -5,6 +5,8 @@ import numpy as np
 import os
 import pandas as pd
 import scipy.stats as stat
+from math import sqrt, cos, sin
+
 from filter_data import HO_south, CRGW_south, OTGW_south, HO_west, CRGW_west, OTGW_west
 
 OP = -3  # Obstacle passed
@@ -85,6 +87,36 @@ def newtry(data, coast_data_path):
     plt.title('r_maneuver vs dist_to_coast ')
     plt.xlabel('r maneuver')
     plt.ylabel('relative speed')
+
+
+
+def fill_data(ais_path, coast_data_path):
+    df = pd.read_csv(ais_path, sep=";", decimal=".")
+
+    for index, row in df.iterrows():
+        own_mmsi = row['own_mmsi']
+        obst_mmsi = row['obst_mmsi']
+        
+        lon_man = row['lon_maneuver']
+        lat_man = row['lat_maneuver']
+        colreg_type = row['COLREG']
+        dist_to_coast = distance_from_coast(lon_man,lat_man,coast_data_path,degree_in_km=111.1)
+        df.loc[index, ['dist_to_coast']]= [dist_to_coast]  
+        #fill in relative speed
+        v_own = row['own_speed']
+        v_obst = row['obst_speed']
+        rel_b_cpa = row['beta_cpa']
+        relative_speed_cpa = sqrt(v_own**2 + v_obst**2 - 2*v_own*v_obst*cos(rel_b_cpa))
+        df.loc[index, ['relative_speed']]= [relative_speed_cpa] 
+        #fill in mean length 
+        own_lengths = row['own_length'] # every row in this column 
+        obst_lengths = row['obst_length'] 
+        mean_length = (obst_lengths+own_lengths)/2
+        df.loc[index, ['mean_length']]= [mean_length] 
+
+    input(df)
+
+    df.to_csv('COLREG_new.csv', index = 'False')
 
 def get_ais_distances(ais_path, coast_data_path):
     df = pd.read_csv(ais_path, sep=";", decimal=".")
@@ -187,9 +219,12 @@ if __name__ == '__main__':
 
     #Run only one time to save the data. Will cost less time
     #save_coastal_data(path,resolution='h')  
-    print("Adding dists to csv: ")
-    get_ais_distances(os.path.join(path,'classified.csv'), os.path.join(path,'coastal_basemap_data.npy'))
+    #print("Adding dists to csv: ")
+    #get_ais_distances(os.path.join(path,'classified.csv'), os.path.join(path,'coastal_basemap_data.npy'))
     #data = HO_south
+    print('Filling data: ')
+    fill_data(os.path.join(path,'classified.csv'), os.path.join(path,'coastal_basemap_data.npy'))
+
     #newtry(data, os.path.join(path,'coastal_basemap_data.npy'))
 
     #plot_all_ais_cases(os.path.join(path,'classified.csv'), os.path.join(path,'coastal_basemap_data.npy'))

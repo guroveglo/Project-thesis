@@ -107,9 +107,11 @@ def lengthsAndDistances(data, coast_data_path):
     #plt.scatter(r_cpa, dists, alpha=0.5, c ='#EA3245')
     plt.scatter(cpas, dists, alpha=0.5, c ='#EA3245')
 
+
     fig = plt.figure()
     #plt.scatter(r_maneuver, dists, alpha=0.5, c='#24C459')
     plt.scatter(mans, dists, alpha=0.5, c='#24C459')
+    
 
     plt.title('distance to coast')
     plt.xlabel('r maneuver')
