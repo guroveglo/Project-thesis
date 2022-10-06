@@ -16,8 +16,6 @@ types = {'own_name' : 'str','obst_name' : 'str','date_cpa' : 'str','start_idx': 
 df = pd.read_csv('COLREG_classified.csv',  sep=";", decimal=".", dtype=types) 
 input(df)
 
-
-
 print('Parameter file:\nNumber of situations: ' + str(len(df)))
 df = df.drop_duplicates(subset=['own_mmsi', 'obst_mmsi', 'date_cpa'], keep="first")  # Remove duplicates (diff case)
 print('Number of situations without duplicates: ' + str(len(df)))
@@ -42,12 +40,12 @@ HO_df = HO_df.loc[(HO_df['beta_cpa'] < 180)]  # Exclude sb-to-sb passings
 HO_df = HO_df.loc[(HO_df['delta_course_own'] < 0)]  # Exclude port maneuvers
 print('Number of head-on situations: before filt:' + str(n_before) + ', after filt:' + str(len(HO_df)))
 HO_man_obst = HO_df.loc[(HO_df['maneuver_made_obst'] == True)]
-print('Number of situations were obst ship makes maneuver: ', str(len(HO_man_obst)))
+print('Number of situations were HO obst ship makes maneuver: ', str(len(HO_man_obst)))
 
 OTGW_df = df.loc[(df['COLREG'] == OTGW)]
 print('Number of otgw situations: ' + str(len(OTGW_df)))
 OTGW_man_obst = OTGW_df.loc[(OTGW_df['maneuver_made_obst'] == True)]
-print('Number of situations were obst ship makes maneuver: ', str(len(OTGW_man_obst)))
+print('Number of situations were OTGW obst ship makes maneuver: ', str(len(OTGW_man_obst)))
 
 CRGW_df = df.loc[(df['COLREG'] == CRGW)]
 n_before = len(CRGW_df)
@@ -56,7 +54,7 @@ CRGW_df = CRGW_df.loc[(CRGW_df['beta_start'] > 180)]  # Exclude port starts
 CRGW_df = CRGW_df.loc[(CRGW_df['delta_course_own'] < 0)]  # Exclude port maneuvers
 print('Number of crgw situations: before filt:' + str(n_before) + ', after filt:' + str(len(CRGW_df)))
 CRGW_man_obst = CRGW_df.loc[(CRGW_df['maneuver_made_obst'] == True)]
-print('Number of situations were obst ship makes maneuver: ', str(len(CRGW_man_obst)))
+print('Number of situations were CRGW obst ship makes maneuver: ', str(len(CRGW_man_obst)))
 
 
 HO_west = HO_df.loc[HO_df['dataset'] == 'encs_west']
