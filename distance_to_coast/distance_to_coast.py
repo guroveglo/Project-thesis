@@ -116,7 +116,7 @@ def fill_data(ais_path, coast_data_path):
 
     input(df)
 
-    df.to_csv('COLREG_new.csv', index = 'False')
+    df.to_csv('COLREG_new_1.csv', index = 'False', header = False)
 
 def get_ais_distances(ais_path, coast_data_path):
     df = pd.read_csv(ais_path, sep=";", decimal=".")
